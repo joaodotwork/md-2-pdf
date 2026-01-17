@@ -4,6 +4,7 @@
 PyPDF2>=3.0.0
 Pillow>=10.0.0
 markdown>=3.4.0
+weasyprint>=60.0.0
 
 # External system dependencies (not installed via pip):
 # - pandoc: sudo apt-get install pandoc

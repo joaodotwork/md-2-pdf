@@ -1,5 +1,28 @@
 {
+  "name": "@joaodotwork/md-2-pdf",
+  "version": "1.0.0",
+  "description": "Convert markdown files to PDF with mermaid diagram support",
+  "main": "index.js",
+  "bin": {
+    "md-2-pdf": "./bin/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "markdown",
+    "pdf",
+    "mermaid",
+    "converter"
+  ],
+  "author": "Joao",
+  "license": "ISC",
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2"
-  }
+  },
+  "files": [
+    "md_to_pdf.py",
+    "bin/",
+    "requirements.txt"
+  ]
 }

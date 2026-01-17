@@ -40,18 +40,25 @@ def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
         temp_file_path = temp_file.name
         temp_file.write(mermaid_code)
     
+    # Try local node_modules first, then global mmdc
+    mmdc_path = os.path.join(os.getcwd(), 'node_modules', '.bin', 'mmdc')
+    if not os.path.exists(mmdc_path):
+        mmdc_path = 'mmdc'
+    
     try:
         subprocess.run([
-            'mmdc',  # Use the globally installed mmdc command
+            mmdc_path,
             '-i', temp_file_path,
             '-o', output_path,
             '-b', 'transparent'
         ], check=True, capture_output=True)
         return True
-    except subprocess.CalledProcessError as e:
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Error rendering mermaid diagram: {e}")
-        print(f"stdout: {e.stdout.decode()}")
-        print(f"stderr: {e.stderr.decode()}")
+        if hasattr(e, 'stdout'):
+            print(f"stdout: {e.stdout.decode()}")
+        if hasattr(e, 'stderr'):
+            print(f"stderr: {e.stderr.decode()}")
         return False
     finally:
         os.unlink(temp_file_path)
@@ -136,13 +143,35 @@ def convert_markdown_to_pdf(
     else:
         input_for_pandoc = input_path
     
+    # Determine available PDF engine
+    pdf_engine = 'xelatex'
+    try:
+        subprocess.run(['which', 'xelatex'], check=True, capture_output=True)
+    except subprocess.CalledProcessError:
+        try:
+            subprocess.run(['which', 'pdflatex'], check=True, capture_output=True)
+            pdf_engine = 'pdflatex'
+        except subprocess.CalledProcessError:
+            try:
+                subprocess.run(['which', 'weasyprint'], check=True, capture_output=True)
+                pdf_engine = 'weasyprint'
+            except subprocess.CalledProcessError:
+                try:
+                    subprocess.run(['which', 'wkhtmltopdf'], check=True, capture_output=True)
+                    pdf_engine = 'wkhtmltopdf'
+                except subprocess.CalledProcessError:
+                    print("No suitable PDF engine found (xelatex, pdflatex, weasyprint, wkhtmltopdf).")
+                    return False
+
+    print(f"Using PDF engine: {pdf_engine}")
+
     # Convert to PDF using pandoc
     try:
         subprocess.run([
             'pandoc',
             input_for_pandoc,
             '-o', output_path,
-            '--pdf-engine=xelatex',
+            f'--pdf-engine={pdf_engine}',
             '-V', 'geometry:margin=1in'
         ], check=True, capture_output=True)
         print(f"Successfully converted {input_path} to {output_path}")
