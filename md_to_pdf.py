@@ -176,7 +176,8 @@ def convert_markdown_to_pdf(
         '-V', 'linestretch=1.2',
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
-        '-V', 'urlcolor=blue'
+        '-V', 'urlcolor=blue',
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{1em}}'
     ]
     
     try:
