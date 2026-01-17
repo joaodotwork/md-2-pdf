@@ -171,13 +171,17 @@ def convert_markdown_to_pdf(
         input_for_pandoc,
         '-o', output_path,
         f'--pdf-engine={pdf_engine}',
-        '-V', 'geometry:margin=0.8in',
+        '-V', 'geometry:top=0.75in',
+        '-V', 'geometry:bottom=1in',
+        '-V', 'geometry:left=0.75in',
+        '-V', 'geometry:right=0.75in',
         '-V', 'fontsize=11pt',
-        '-V', 'linestretch=1.2',
+        '-V', 'linestretch=1.0',
+        '-V', 'parskip=6pt',
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
-        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{1em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000'
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000'
     ]
     
     try:

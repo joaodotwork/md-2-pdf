@@ -1,6 +1,6 @@
 {
   "name": "@joaodotwork/md-2-pdf",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Convert markdown files to PDF with mermaid diagram support",
   "main": "index.js",
   "bin": {
