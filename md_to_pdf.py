@@ -166,14 +166,21 @@ def convert_markdown_to_pdf(
     print(f"Using PDF engine: {pdf_engine}")
 
     # Convert to PDF using pandoc
+    cmd = [
+        'pandoc',
+        input_for_pandoc,
+        '-o', output_path,
+        f'--pdf-engine={pdf_engine}',
+        '-V', 'geometry:margin=0.8in',
+        '-V', 'fontsize=11pt',
+        '-V', 'linestretch=1.2',
+        '-V', 'colorlinks=true',
+        '-V', 'linkcolor=blue',
+        '-V', 'urlcolor=blue'
+    ]
+    
     try:
-        subprocess.run([
-            'pandoc',
-            input_for_pandoc,
-            '-o', output_path,
-            f'--pdf-engine={pdf_engine}',
-            '-V', 'geometry:margin=1in'
-        ], check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True)
         print(f"Successfully converted {input_path} to {output_path}")
         return True
     except subprocess.CalledProcessError as e:
