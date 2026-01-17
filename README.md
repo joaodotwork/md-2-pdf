@@ -1,95 +1,75 @@
-# Markdown to PDF Converter with Mermaid Support
+# md-2-pdf
 
-A Python utility to convert Markdown files to PDF while properly rendering Mermaid diagrams.
+A powerful CLI tool to convert Markdown files to PDF with built-in Mermaid diagram support.
 
-## Features
-
-- Converts Markdown files to PDF
-- Properly renders Mermaid diagrams as images in the PDF
-- Processes individual files or entire directories
-- Customizable output and temporary directories
-
-## Requirements
-
-- Python 3.6+
-- Node.js and npm (for Mermaid CLI)
-- Pandoc (for Markdown to PDF conversion)
-- LaTeX (XeLaTeX for PDF generation)
+It automatically handles:
+- **Mermaid Diagrams:** Renders `mermaid` code blocks into high-quality images.
+- **PDF Generation:** Uses `xelatex` (or `weasyprint`/`wkhtmltopdf` as fallbacks) for professional PDF output.
+- **Smart Formatting:** Includes improved defaults for readability (margins, fonts, links) and prevents bad page breaks (widows/orphans).
 
 ## Installation
 
-1. Ensure you have Python 3.6+ installed
-2. Install Node.js and npm
-3. Install Pandoc: https://pandoc.org/installing.html
-4. Install a LaTeX distribution like TeX Live or MiKTeX
-5. Clone this repository or download the script
+### Prerequisites
 
-The script will automatically install the Mermaid CLI (@mermaid-js/mermaid-cli) if needed.
+1.  **Node.js & npm** (Installed automatically with the package)
+2.  **Python 3** (Required for the core script)
+3.  **PDF Engine** (One of the following):
+    *   **Recommended:** `xelatex` (Install via [MacTeX](https://tug.org/mactex/) on macOS or `texlive` on Linux)
+    *   *Fallback:* `weasyprint` (`pip install weasyprint`)
+
+### Install via npm
+
+```bash
+npm install -g @joaodotwork/md-2-pdf
+```
 
 ## Usage
 
-### Basic Usage
-
-Convert a single Markdown file to PDF:
+### Convert a File
 
 ```bash
-python md_to_pdf.py path/to/file.md
+md-2-pdf input.md
 ```
+This creates `input.pdf` in the same directory.
 
-Convert all Markdown files in a directory:
+### Convert a Directory
+
+Process all `.md` files in a folder:
 
 ```bash
-python md_to_pdf.py path/to/directory
+md-2-pdf ./docs
 ```
 
-### Advanced Options
-
-Specify output file or directory:
+### Options
 
 ```bash
-python md_to_pdf.py path/to/input.md -o path/to/output.pdf
-python md_to_pdf.py path/to/input_dir -o path/to/output_dir
+# Specify output location
+md-2-pdf input.md -o output.pdf
+
+# Check dependencies
+md-2-pdf --check-only
 ```
 
-Specify custom temporary directory:
+## Features
 
-```bash
-python md_to_pdf.py path/to/input.md -t path/to/temp_dir
+- **Mermaid Support:**
+  ```mermaid
+  graph TD;
+      A-->B;
+      A-->C;
+      B-->D;
+      C-->D;
+  ```
+  Just use standard ````mermaid blocks in your markdown.
+
+- **Clean Layout:**
+  - Standardized font size (11pt) and line spacing (1.2).
+  - Blue clickable links.
+  - Horizontal rules (`---`) rendered as vertical space instead of lines.
+  - Smart page breaking rules to keep headers with content.
+
+## License
+
+ISC
+
 ```
-
-Check if all dependencies are installed:
-
-```bash
-python md_to_pdf.py --check-only
-```
-
-## How It Works
-
-1. The script reads the Markdown file and extracts Mermaid diagram code blocks
-2. For each Mermaid diagram, it:
-   - Saves the diagram code to a temporary file
-   - Uses Mermaid CLI to render the diagram as an image
-   - Replaces the Mermaid code block with an image reference
-3. The modified Markdown with image references is saved to a temporary file
-4. Pandoc converts the modified Markdown to PDF using XeLaTeX
-
-## Example
-
-Input Markdown:
-
-````markdown
-# Sample Document
-
-Here's a diagram:
-
-```mermaid
-flowchart TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Process 1]
-    B -->|No| D[Process 2]
-    C --> E[End]
-    D --> E
-```
-````
-
-This will be converted to a PDF with the diagram properly rendered.
