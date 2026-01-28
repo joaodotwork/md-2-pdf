@@ -3,7 +3,7 @@
 A powerful CLI tool to convert Markdown files to PDF with built-in Mermaid diagram support.
 
 It automatically handles:
-- **Mermaid Diagrams:** Renders `mermaid` code blocks into high-quality images.
+- **Mermaid Diagrams:** Renders `mermaid` code blocks into high-quality vector graphics (PDF) for lossless scaling.
 - **PDF Generation:** Uses `xelatex` (or `weasyprint`/`wkhtmltopdf` as fallbacks) for professional PDF output.
 - **Smart Formatting:** Includes improved defaults for readability (margins, fonts, links) and prevents bad page breaks (widows/orphans).
 
@@ -60,7 +60,7 @@ md-2-pdf --check-only
       B-->D;
       C-->D;
   ```
-  Just use standard ````mermaid blocks in your markdown.
+  Just use standard ````mermaid blocks in your markdown. Now renders as vector graphics (PDF) instead of bitmaps for perfect clarity in your PDF exports.
 
 - **Clean Layout:**
   - Standardized font size (11pt) and line spacing (1.2).

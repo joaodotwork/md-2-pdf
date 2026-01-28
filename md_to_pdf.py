@@ -84,7 +84,7 @@ def replace_mermaid_with_images(
     updated_content = markdown_content
     
     for i, (full_match, mermaid_code) in enumerate(mermaid_blocks):
-        image_filename = f"{base_filename}_diagram_{i}.png"
+        image_filename = f"{base_filename}_diagram_{i}.pdf"
         image_path = os.path.join(output_dir, image_filename)
         
         if render_mermaid_diagram(mermaid_code, image_path):
@@ -121,6 +121,8 @@ def convert_markdown_to_pdf(
         temp_dir = tempfile.mkdtemp()
     else:
         os.makedirs(temp_dir, exist_ok=True)
+    
+    print(f"Using temporary directory: {temp_dir}")
     
     # Read the markdown content
     with open(input_path, 'r') as f:
