@@ -22,8 +22,8 @@
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },
-  "author": "Joao",
-  "license": "ISC",
+  "author": "Joao Doria de Souza",
+  "license": "MIT",
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.4.2"
   },

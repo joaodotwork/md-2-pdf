@@ -1,7 +1,7 @@
 # md-2-pdf
 
 [![npm version](https://img.shields.io/npm/v/@joaodotwork/md-2-pdf.svg)](https://www.npmjs.com/package/@joaodotwork/md-2-pdf)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful CLI tool to convert Markdown files to PDF with built-in **Mermaid diagram support**. It bridges the gap between GitHub-flavored documentation and professional PDF exports.
 
@@ -95,4 +95,4 @@ md-2-pdf --check-only
 
 ## License
 
-ISC © [Joao](https://github.com/joaodotwork)
+MIT © [Joao Doria de Souza](https://github.com/joaodotwork)
