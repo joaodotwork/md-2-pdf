@@ -1,21 +1,38 @@
 # md-2-pdf
 
-A powerful CLI tool to convert Markdown files to PDF with built-in Mermaid diagram support.
+[![npm version](https://img.shields.io/npm/v/@joaodotwork/md-2-pdf.svg)](https://www.npmjs.com/package/@joaodotwork/md-2-pdf)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
-It automatically handles:
-- **Mermaid Diagrams:** Renders `mermaid` code blocks into high-quality vector graphics (PDF) for lossless scaling.
-- **PDF Generation:** Uses `xelatex` (or `weasyprint`/`wkhtmltopdf` as fallbacks) for professional PDF output.
-- **Smart Formatting:** Includes improved defaults for readability (margins, fonts, links) and prevents bad page breaks (widows/orphans).
+A powerful CLI tool to convert Markdown files to PDF with built-in **Mermaid diagram support**. It bridges the gap between GitHub-flavored documentation and professional PDF exports.
+
+## Why md-2-pdf?
+
+Most markdown-to-pdf converters struggle with diagrams or produce poorly formatted documents. `md-2-pdf` is designed to:
+- **Preserve Vector Quality:** Renders Mermaid diagrams as PDF vectors (not bitmaps) for lossless scaling.
+- **Support GFM Conventions:** Handles lists interrupting paragraphs, task lists, and other GitHub Flavored Markdown features.
+- **Professional Typography:** Uses `xelatex` by default for high-quality typesetting with smart page breaking.
+
+## Key Features
+
+- **Mermaid Diagrams:** Automatically detects ````mermaid` blocks and renders them as vector graphics.
+- **Smart Formatting:**
+  - Standardized 11pt font and optimized line spacing.
+  - Interactive, blue clickable links.
+  - Automatic widow/orphan protection (keeps headers with content).
+  - Customizable margins and geometry.
+- **Multi-Engine Support:** Automatically detects and uses the best available PDF engine (`xelatex`, `pdflatex`, `weasyprint`, or `wkhtmltopdf`).
+- **Batch Processing:** Convert single files or entire directories with one command.
 
 ## Installation
 
 ### Prerequisites
 
-1.  **Node.js & npm** (Installed automatically with the package)
-2.  **Python 3** (Required for the core script)
-3.  **PDF Engine** (One of the following):
-    *   **Recommended:** `xelatex` (Install via [MacTeX](https://tug.org/mactex/) on macOS or `texlive` on Linux)
-    *   *Fallback:* `weasyprint` (`pip install weasyprint`)
+1.  **Node.js & npm** (Required for Mermaid rendering)
+2.  **Python 3** (Required for the core logic)
+3.  **Pandoc** (The engine behind the conversion)
+4.  **PDF Engine** (One of the following):
+    *   **Recommended:** `xelatex` (Install via [MacTeX](https://tug.org/mactex/) on macOS or `texlive-full` on Linux)
+    *   *Alternative:* `weasyprint` (`pip install weasyprint`)
 
 ### Install via npm
 
@@ -23,53 +40,59 @@ It automatically handles:
 npm install -g @joaodotwork/md-2-pdf
 ```
 
+*Or use `pnpm` / `yarn`:*
+```bash
+pnpm add -g @joaodotwork/md-2-pdf
+```
+
 ## Usage
 
-### Convert a File
+### Single File Conversion
 
 ```bash
-md-2-pdf input.md
+md-2-pdf manual.md
 ```
-This creates `input.pdf` in the same directory.
+*Creates `manual.pdf` in the same directory.*
 
-### Convert a Directory
+### Batch Processing
 
-Process all `.md` files in a folder:
+Convert all markdown files in a directory:
 
 ```bash
-md-2-pdf ./docs
+md-2-pdf ./documentation
 ```
 
-### Options
+### Advanced Options
 
 ```bash
-# Specify output location
-md-2-pdf input.md -o output.pdf
+# Specify a custom output name
+md-2-pdf proposal.md -o Final_Proposal.pdf
 
-# Check dependencies
+# Check if all dependencies are correctly installed
 md-2-pdf --check-only
 ```
 
-## Features
+## Mermaid Support
 
-- **Mermaid Support:**
-  ```mermaid
-  graph TD;
-      A-->B;
-      A-->C;
-      B-->D;
-      C-->D;
-  ```
-  Just use standard ````mermaid blocks in your markdown. Now renders as vector graphics (PDF) instead of bitmaps for perfect clarity in your PDF exports.
+Simply use standard Mermaid syntax in your markdown:
 
-- **Clean Layout:**
-  - Standardized font size (11pt) and line spacing (1.2).
-  - Blue clickable links.
-  - Horizontal rules (`---`) rendered as vertical space instead of lines.
-  - Smart page breaking rules to keep headers with content.
+```mermaid
+graph TD;
+    A[Markdown File] -->|Processor| B(Extract Mermaid);
+    B --> C{Render to PDF};
+    C -->|Vector| D[High-Quality PDF];
+```
+
+The tool will extract these blocks, render them using `mermaid-cli`, and embed them back into the final document seamlessly.
+
+## Troubleshooting
+
+If you encounter issues with PDF generation, ensure `pandoc` and a LaTeX engine (like `xelatex`) are in your PATH. You can verify this by running:
+
+```bash
+md-2-pdf --check-only
+```
 
 ## License
 
-ISC
-
-```
+ISC © [Joao](https://github.com/joaodotwork)

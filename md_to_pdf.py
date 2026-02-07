@@ -172,6 +172,7 @@ def convert_markdown_to_pdf(
         'pandoc',
         input_for_pandoc,
         '-o', output_path,
+        '--from=gfm',
         f'--pdf-engine={pdf_engine}',
         '-V', 'geometry:top=0.75in',
         '-V', 'geometry:bottom=1in',
