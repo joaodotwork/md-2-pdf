@@ -167,6 +167,10 @@ def convert_markdown_to_pdf(
 
     print(f"Using PDF engine: {pdf_engine}")
 
+    # Locate bundled Lua filters
+    script_dir = Path(__file__).resolve().parent
+    table_fit_filter = script_dir / 'filters' / 'table-fit.lua'
+
     # Convert to PDF using pandoc
     cmd = [
         'pandoc',
@@ -174,6 +178,7 @@ def convert_markdown_to_pdf(
         '-o', output_path,
         '--from=gfm',
         f'--pdf-engine={pdf_engine}',
+        f'--lua-filter={table_fit_filter}',
         '-V', 'geometry:top=0.75in',
         '-V', 'geometry:bottom=1in',
         '-V', 'geometry:left=0.75in',
@@ -184,7 +189,7 @@ def convert_markdown_to_pdf(
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
-        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000'
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak}'
     ]
     
     try:
