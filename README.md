@@ -19,6 +19,7 @@ Most markdown-to-pdf converters struggle with diagrams or produce poorly formatt
   - Standardized 11pt font and optimized line spacing.
   - Interactive, blue clickable links.
   - Automatic widow/orphan protection (keeps headers with content).
+  - Wide tables wrap to fit the page — pipe tables with short separator dashes (`|---|---|`) get equal column widths and wrapping cells instead of overflowing.
   - Customizable margins and geometry.
 - **Multi-Engine Support:** Automatically detects and uses the best available PDF engine (`xelatex`, `pdflatex`, `weasyprint`, or `wkhtmltopdf`).
 - **Batch Processing:** Convert single files or entire directories with one command.
