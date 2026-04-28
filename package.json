@@ -1,10 +1,10 @@
 {
   "name": "@joaodotwork/md-2-pdf",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Convert markdown files to PDF with mermaid diagram support",
   "main": "index.js",
   "bin": {
-    "md-2-pdf": "./bin/index.js"
+    "md-2-pdf": "bin/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
