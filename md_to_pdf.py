@@ -170,6 +170,7 @@ def convert_markdown_to_pdf(
     # Locate bundled Lua filters
     script_dir = Path(__file__).resolve().parent
     table_fit_filter = script_dir / 'filters' / 'table-fit.lua'
+    code_break_filter = script_dir / 'filters' / 'code-break.lua'
 
     # Convert to PDF using pandoc
     cmd = [
@@ -179,6 +180,7 @@ def convert_markdown_to_pdf(
         '--from=gfm',
         f'--pdf-engine={pdf_engine}',
         f'--lua-filter={table_fit_filter}',
+        f'--lua-filter={code_break_filter}',
         '-V', 'geometry:top=0.75in',
         '-V', 'geometry:bottom=1in',
         '-V', 'geometry:left=0.75in',
@@ -189,8 +191,19 @@ def convert_markdown_to_pdf(
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
-        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak}'
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}'
     ]
+
+    # Use a Unicode-rich monospace font when the engine supports it (fontspec).
+    # DejaVu Sans Mono ships with TeX Live and covers box-drawing characters
+    # (│ └── ├──), so ASCII-art trees in code blocks render correctly. Pass the
+    # font as a .ttf filename so fontspec resolves it via kpsewhich, which
+    # works regardless of fontconfig setup or TeX Live install path.
+    if pdf_engine in ('xelatex', 'lualatex'):
+        cmd.extend([
+            '-V', 'monofont=DejaVuSansMono.ttf',
+            '-V', 'monofontoptions=BoldFont=DejaVuSansMono-Bold.ttf, ItalicFont=DejaVuSansMono-Oblique.ttf, BoldItalicFont=DejaVuSansMono-BoldOblique.ttf',
+        ])
     
     try:
         subprocess.run(cmd, check=True, capture_output=True)

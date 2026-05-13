@@ -20,6 +20,9 @@ Most markdown-to-pdf converters struggle with diagrams or produce poorly formatt
   - Interactive, blue clickable links.
   - Automatic widow/orphan protection (keeps headers with content).
   - Wide tables wrap to fit the page — pipe tables with short separator dashes (`|---|---|`) get equal column widths and wrapping cells instead of overflowing.
+  - Long inline code (filenames, identifiers) wraps cleanly inside narrow table cells, breaking at `-`, `_`, `.`, and `/` instead of colliding with the next column.
+  - Code blocks wrap soft-overflow lines instead of running off the page (via `fvextra` `breaklines`), with a `↪` continuation marker.
+  - Unicode-safe monospace font (DejaVu Sans Mono) — box-drawing characters (`│ └── ├──`) and other non-ASCII glyphs render correctly in code blocks.
   - Customizable margins and geometry.
 - **Multi-Engine Support:** Automatically detects and uses the best available PDF engine (`xelatex`, `pdflatex`, `weasyprint`, or `wkhtmltopdf`).
 - **Batch Processing:** Convert single files or entire directories with one command.
