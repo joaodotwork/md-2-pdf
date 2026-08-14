@@ -13,16 +13,6 @@ import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-# Space available to an image, derived from the geometry passed to pandoc:
-# US Letter (612x792pt) less 0.75in side margins, 0.75in top and 1in bottom.
-TEXT_WIDTH_PT = 504.0
-TEXT_HEIGHT_PT = 666.0
-
-# Tall diagrams are bounded to less than the full text height so a preceding
-# heading still fits alongside them. Filling the height exactly would leave the
-# diagram unable to share a page, orphaning it and blanking the page before.
-DIAGRAM_MAX_HEIGHT_PT = TEXT_HEIGHT_PT - 100.0
-
 
 def find_mermaid_blocks(markdown_content: str) -> List[Tuple[str, str]]:
     """Extract mermaid blocks from markdown content.
@@ -34,88 +24,6 @@ def find_mermaid_blocks(markdown_content: str) -> List[Tuple[str, str]]:
     pattern = r"```mermaid\n(.*?)```"
     matches = re.finditer(pattern, markdown_content, re.DOTALL)
     return [(match.group(0), match.group(1).strip()) for match in matches]
-
-
-def pdf_media_box(pdf_path: str) -> Optional[Tuple[float, float]]:
-    """Read the width and height in points from a PDF's MediaBox.
-
-    Args:
-        pdf_path: Path to the PDF to measure
-
-    Returns:
-        A (width, height) tuple, or None if the box could not be read
-    """
-    try:
-        with open(pdf_path, 'rb') as f:
-            data = f.read()
-    except OSError:
-        return None
-
-    match = re.search(
-        rb'/MediaBox\s*\[\s*([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)\s+([\d.+-]+)',
-        data
-    )
-    if not match:
-        return None
-
-    x0, y0, x1, y1 = (float(v) for v in match.groups())
-    width, height = x1 - x0, y1 - y0
-    if width <= 0 or height <= 0:
-        return None
-    return width, height
-
-
-def image_fit_attributes(pdf_path: str) -> str:
-    """Build pandoc image attributes that keep a diagram on one page.
-
-    Pandoc bounds images to the text width but not the text height, so a
-    diagram taller than the text block gets pushed onto the next page and then
-    overflows it. Constraining width by the height ratio keeps the whole
-    diagram on a single page.
-
-    Args:
-        pdf_path: Path to the rendered diagram PDF
-
-    Returns:
-        A pandoc attribute string, or an empty string if no bound is needed
-    """
-    box = pdf_media_box(pdf_path)
-    if not box:
-        return ''
-
-    width, height = box
-    if height / width <= DIAGRAM_MAX_HEIGHT_PT / TEXT_WIDTH_PT:
-        return ''
-
-    return '{width=%.0fpt}' % (DIAGRAM_MAX_HEIGHT_PT * width / height)
-
-
-def crop_to_content(pdf_path: str) -> None:
-    """Trim a rendered diagram PDF down to its content box.
-
-    mmdc pads PDF output to a full page, so a diagram carries that whitespace
-    into the document and pandoc scales the padding along with the drawing.
-    Cropping first lets the diagram itself fill the text width.
-
-    pdfcrop ships with TeX Live, which is already required for the PDF engine.
-    If it is unavailable the diagram still renders, just with the padding.
-
-    Args:
-        pdf_path: Path to the rendered diagram PDF, modified in place
-    """
-    if not pdf_path.lower().endswith('.pdf'):
-        return
-
-    cropped_path = f"{pdf_path}.cropped"
-    try:
-        subprocess.run(
-            ['pdfcrop', '--margins', '2', pdf_path, cropped_path],
-            check=True, capture_output=True
-        )
-        os.replace(cropped_path, pdf_path)
-    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
-        if os.path.exists(cropped_path):
-            os.unlink(cropped_path)
 
 
 def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
@@ -143,13 +51,14 @@ def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
             '-i', temp_file_path,
             '-o', output_path,
             '-b', 'transparent',
-            # mmdc lays PDF output onto fixed-size pages and paginates anything
-            # taller than one page, leaving page 1 blank. Since \includegraphics
-            # embeds only the first page, a tall diagram would silently vanish
-            # from the document. --pdfFit scales it to fit a single page.
+            # Without this, mmdc lays PDF output onto fixed 612x792pt pages and
+            # paginates anything taller, leaving page 1 blank. Since
+            # \includegraphics embeds only the first page, a tall diagram would
+            # silently vanish from the document. --pdfFit sizes the page to the
+            # diagram itself, so the output is always a single page and pandoc
+            # scales it down to the text block from there.
             '--pdfFit'
         ], check=True, capture_output=True)
-        crop_to_content(output_path)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Error rendering mermaid diagram: {e}")
@@ -187,8 +96,7 @@ def replace_mermaid_with_images(
         
         if render_mermaid_diagram(mermaid_code, image_path):
             # Replace the mermaid block with an image reference
-            attributes = image_fit_attributes(image_path)
-            image_ref = f"\n\n![Diagram {i+1}]({image_path}){attributes}\n\n"
+            image_ref = f"\n\n![Diagram {i+1}]({image_path})\n\n"
             updated_content = updated_content.replace(full_match, image_ref)
     
     return updated_content
@@ -276,9 +184,7 @@ def convert_markdown_to_pdf(
         'pandoc',
         input_for_pandoc,
         '-o', output_path,
-        # attributes lets the sizing attribute on rendered diagram images be
-        # honoured; plain gfm would emit it as literal text.
-        '--from=gfm+attributes',
+        '--from=gfm',
         f'--pdf-engine={pdf_engine}',
         f'--lua-filter={table_fit_filter}',
         f'--lua-filter={code_break_filter}',
@@ -292,7 +198,22 @@ def convert_markdown_to_pdf(
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
-        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}'
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}',
+        # Pandoc wraps every image in \pandocbounded, which scales it down to
+        # fit the text block. Bounding by the full text height leaves a tall
+        # diagram unable to share a page with its own heading, so it lands
+        # alone on the next one and blanks the page before it. Reserving 100pt
+        # lets the heading travel with the diagram. Guarded because
+        # \pandocbounded only exists in pandoc 3.1.7 and later; without it,
+        # images keep pandoc's own bounding.
+        '-V', 'header-includes=\\makeatletter \\@ifundefined{pandocbounded}{}{'
+              '\\renewcommand*\\pandocbounded[1]{\\sbox\\pandoc@box{#1}'
+              '\\Gscale@div\\@tempa{\\dimexpr\\textheight-100pt\\relax}'
+              '{\\dimexpr\\ht\\pandoc@box+\\dp\\pandoc@box\\relax}'
+              '\\Gscale@div\\@tempb{\\linewidth}{\\wd\\pandoc@box}'
+              '\\ifdim\\@tempb\\p@<\\@tempa\\p@\\let\\@tempa\\@tempb\\fi'
+              '\\ifdim\\@tempa\\p@<\\p@\\scalebox{\\@tempa}{\\usebox\\pandoc@box}'
+              '\\else\\usebox{\\pandoc@box}\\fi}} \\makeatother'
     ]
 
     # Use a Unicode-rich monospace font when the engine supports it (fontspec).
