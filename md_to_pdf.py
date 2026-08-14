@@ -50,7 +50,14 @@ def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
             mmdc_path,
             '-i', temp_file_path,
             '-o', output_path,
-            '-b', 'transparent'
+            '-b', 'transparent',
+            # Without this, mmdc lays PDF output onto fixed 612x792pt pages and
+            # paginates anything taller, leaving page 1 blank. Since
+            # \includegraphics embeds only the first page, a tall diagram would
+            # silently vanish from the document. --pdfFit sizes the page to the
+            # diagram itself, so the output is always a single page and pandoc
+            # scales it down to the text block from there.
+            '--pdfFit'
         ], check=True, capture_output=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
@@ -191,7 +198,22 @@ def convert_markdown_to_pdf(
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
-        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}'
+        '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}',
+        # Pandoc wraps every image in \pandocbounded, which scales it down to
+        # fit the text block. Bounding by the full text height leaves a tall
+        # diagram unable to share a page with its own heading, so it lands
+        # alone on the next one and blanks the page before it. Reserving 100pt
+        # lets the heading travel with the diagram. Guarded because
+        # \pandocbounded only exists in pandoc 3.1.7 and later; without it,
+        # images keep pandoc's own bounding.
+        '-V', 'header-includes=\\makeatletter \\@ifundefined{pandocbounded}{}{'
+              '\\renewcommand*\\pandocbounded[1]{\\sbox\\pandoc@box{#1}'
+              '\\Gscale@div\\@tempa{\\dimexpr\\textheight-100pt\\relax}'
+              '{\\dimexpr\\ht\\pandoc@box+\\dp\\pandoc@box\\relax}'
+              '\\Gscale@div\\@tempb{\\linewidth}{\\wd\\pandoc@box}'
+              '\\ifdim\\@tempb\\p@<\\@tempa\\p@\\let\\@tempa\\@tempb\\fi'
+              '\\ifdim\\@tempa\\p@<\\p@\\scalebox{\\@tempa}{\\usebox\\pandoc@box}'
+              '\\else\\usebox{\\pandoc@box}\\fi}} \\makeatother'
     ]
 
     # Use a Unicode-rich monospace font when the engine supports it (fontspec).
