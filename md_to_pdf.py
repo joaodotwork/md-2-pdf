@@ -9,9 +9,29 @@ import argparse
 import os
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple
+
+
+# PDF engines pandoc can drive, in order of preference.
+PDF_ENGINES = ('xelatex', 'pdflatex', 'weasyprint', 'wkhtmltopdf')
+
+
+def find_pdf_engine() -> Optional[str]:
+    """Return the first supported PDF engine found on PATH, or None.
+
+    Returns:
+        The engine name, or None if none of PDF_ENGINES is installed
+    """
+    for engine in PDF_ENGINES:
+        try:
+            subprocess.run(['which', engine], check=True, capture_output=True)
+            return engine
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            continue
+    return None
 
 
 def find_mermaid_blocks(markdown_content: str) -> List[Tuple[str, str]]:
@@ -153,24 +173,10 @@ def convert_markdown_to_pdf(
         input_for_pandoc = input_path
     
     # Determine available PDF engine
-    pdf_engine = 'xelatex'
-    try:
-        subprocess.run(['which', 'xelatex'], check=True, capture_output=True)
-    except subprocess.CalledProcessError:
-        try:
-            subprocess.run(['which', 'pdflatex'], check=True, capture_output=True)
-            pdf_engine = 'pdflatex'
-        except subprocess.CalledProcessError:
-            try:
-                subprocess.run(['which', 'weasyprint'], check=True, capture_output=True)
-                pdf_engine = 'weasyprint'
-            except subprocess.CalledProcessError:
-                try:
-                    subprocess.run(['which', 'wkhtmltopdf'], check=True, capture_output=True)
-                    pdf_engine = 'wkhtmltopdf'
-                except subprocess.CalledProcessError:
-                    print("No suitable PDF engine found (xelatex, pdflatex, weasyprint, wkhtmltopdf).")
-                    return False
+    pdf_engine = find_pdf_engine()
+    if pdf_engine is None:
+        print(f"No suitable PDF engine found ({', '.join(PDF_ENGINES)}).")
+        return False
 
     print(f"Using PDF engine: {pdf_engine}")
 
@@ -280,28 +286,42 @@ def check_dependencies() -> bool:
     for dep in dependencies:
         try:
             subprocess.run(['which', dep], check=True, capture_output=True)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             print(f"Required dependency not found: {dep}")
             if dep == 'npx':
                 print("Please install Node.js and npm")
             elif dep == 'pandoc':
                 print("Please install pandoc")
             return False
-    
-    # Check for mermaid-cli
+
+    # Check for mermaid-cli. An absent mmdc raises FileNotFoundError rather
+    # than CalledProcessError, so both have to be caught for the install
+    # fallback to run at all.
     try:
         subprocess.run(
             ['mmdc', '--version'],
             check=True, capture_output=True
         )
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, FileNotFoundError):
         print("Mermaid CLI not found, installing...")
         try:
             subprocess.run(['npm', 'install', '-g', '@mermaid-js/mermaid-cli'], check=True)
-        except subprocess.CalledProcessError:
+        except (subprocess.CalledProcessError, FileNotFoundError):
             print("Failed to install @mermaid-js/mermaid-cli")
+            print("Please install it manually: npm install -g @mermaid-js/mermaid-cli")
             return False
-    
+
+    # Check for a PDF engine. Conversion picks one of these at run time, so
+    # without any of them a dependency check that passed would still be
+    # followed by a failed conversion.
+    pdf_engine = find_pdf_engine()
+    if pdf_engine is None:
+        print(f"No suitable PDF engine found ({', '.join(PDF_ENGINES)}).")
+        print("Please install one, e.g. xelatex (MacTeX / texlive-full) "
+              "or weasyprint (pip install weasyprint)")
+        return False
+    print(f"Found PDF engine: {pdf_engine}")
+
     return True
 
 
@@ -310,7 +330,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description='Convert markdown files to PDF with mermaid diagram support'
     )
-    parser.add_argument('input', help='Input markdown file or directory')
+    parser.add_argument(
+        'input',
+        nargs='?',
+        help='Input markdown file or directory (not required with --check-only)'
+    )
     parser.add_argument(
         '-o', '--output',
         help='Output PDF file (for single file) or directory (for directory input)'
@@ -326,24 +350,32 @@ def main() -> None:
     )
     
     args = parser.parse_args()
-    
+
+    # input is optional so that --check-only can be run on its own, as the
+    # README documents. Every other mode still needs it.
+    if not args.check_only and args.input is None:
+        parser.error("the following arguments are required: input "
+                     "(omit it only with --check-only)")
+
     # Check dependencies
     if not check_dependencies():
         print("Missing dependencies. Please install the required tools.")
-        return
-    
+        sys.exit(1)
+
     if args.check_only:
         print("All dependencies are installed correctly.")
         return
-    
+
     # Process input
     input_path = Path(args.input)
     if input_path.is_dir():
         process_directory(args.input, args.output, args.temp_dir)
     elif input_path.is_file():
-        convert_markdown_to_pdf(args.input, args.output, args.temp_dir)
+        if not convert_markdown_to_pdf(args.input, args.output, args.temp_dir):
+            sys.exit(1)
     else:
         print(f"Input path does not exist: {args.input}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -76,6 +76,11 @@ md-2-pdf proposal.md -o Final_Proposal.pdf
 md-2-pdf --check-only
 ```
 
+`--check-only` takes no input file. It verifies `npx`, `pandoc`, `mmdc` (installing
+`@mermaid-js/mermaid-cli` globally if it is missing) and at least one PDF engine,
+then prints which engine it found. It exits `0` when everything is present and `1`
+with a diagnostic when something is not.
+
 ## Mermaid Support
 
 Simply use standard Mermaid syntax in your markdown:
