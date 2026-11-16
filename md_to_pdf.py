@@ -34,6 +34,51 @@ def find_pdf_engine() -> Optional[str]:
     return None
 
 
+# Hiragana, katakana, CJK punctuation, kanji (incl. extension A and
+# compatibility ideographs), halfwidth/fullwidth forms. Hangul is left out on
+# purpose: the Harano Aji fonts below follow Adobe-Japan1 and have no Hangul,
+# so switching on xeCJK for Korean would not make it render.
+CJK_PATTERN = re.compile(
+    '[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\u31f0-\u31ff'
+    '\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff00-\uffef]'
+)
+
+
+def contains_cjk(text: str) -> bool:
+    """Return True if text contains Japanese kana, kanji or CJK punctuation."""
+    return CJK_PATTERN.search(text) is not None
+
+
+def cjk_header() -> str:
+    """LaTeX preamble that sets up xeCJK for Japanese text under xelatex.
+
+    The default Latin Modern fonts have no kana or kanji, and xelatex only
+    warns about missing glyphs, so without this a Japanese document
+    "converts" successfully with every Japanese character silently dropped.
+
+    Harano Aji (Mincho for serif, Gothic for sans and mono) ships with TeX
+    Live, so it is passed as .otf filenames for fontspec to resolve via
+    kpsewhich, the same way DejaVu Sans Mono is. Each font gets its own bold
+    face, which pandoc's CJKmainfont/CJKoptions variables cannot do, since
+    they share one option list between all three fonts. CJK has no italic:
+    emphasised Japanese stays upright, which is the typographic convention.
+
+    xeCJK classes some punctuation shared with Latin text as CJK: the middle
+    dot and bullet (which the preamble remaps with \\newunicodechar for line
+    breaking), dashes, curly quotes and the ellipsis, which would otherwise
+    come out full-width in Mincho in the middle of English sentences. They
+    are moved back to the Default class. Japanese
+    text uses its own full-width forms (・「」), which are unaffected.
+    """
+    return (
+        '\\usepackage{xeCJK} '
+        '\\xeCJKDeclareCharClass{Default}{"00B7, "2013, "2014, "2018, "2019, "201C, "201D, "2022, "2026} '
+        '\\setCJKmainfont[BoldFont=HaranoAjiMincho-Bold.otf]{HaranoAjiMincho-Regular.otf} '
+        '\\setCJKsansfont[BoldFont=HaranoAjiGothic-Bold.otf]{HaranoAjiGothic-Regular.otf} '
+        '\\setCJKmonofont[BoldFont=HaranoAjiGothic-Bold.otf]{HaranoAjiGothic-Regular.otf}'
+    )
+
+
 def find_mermaid_blocks(markdown_content: str) -> List[Tuple[str, str]]:
     """Extract mermaid blocks from markdown content.
     
@@ -152,7 +197,7 @@ def convert_markdown_to_pdf(
     print(f"Using temporary directory: {temp_dir}")
     
     # Read the markdown content
-    with open(input_path, 'r') as f:
+    with open(input_path, 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Find and extract mermaid blocks
@@ -165,7 +210,7 @@ def convert_markdown_to_pdf(
         
         # Write updated markdown to temporary file
         temp_md_path = os.path.join(temp_dir, f"{base_filename}_processed.md")
-        with open(temp_md_path, 'w') as f:
+        with open(temp_md_path, 'w', encoding='utf-8') as f:
             f.write(updated_content)
         
         input_for_pandoc = temp_md_path
@@ -184,6 +229,21 @@ def convert_markdown_to_pdf(
     script_dir = Path(__file__).resolve().parent
     table_fit_filter = script_dir / 'filters' / 'table-fit.lua'
     code_break_filter = script_dir / 'filters' / 'code-break.lua'
+
+    # Japanese (kana, kanji) needs CJK fonts. Only switch xeCJK on when the
+    # document has CJK text, so Latin-only documents render exactly as before.
+    # Its header-includes must come first: xeCJK.sty uses · literally inside
+    # \csname while loading, which breaks once the \newunicodechar below has
+    # made · an active character.
+    cjk_args: List[str] = []
+    if contains_cjk(content):
+        if pdf_engine == 'xelatex':
+            print("CJK text detected, enabling Japanese font support (xeCJK)")
+            cjk_args = ['-V', f'header-includes={cjk_header()}']
+        elif pdf_engine == 'pdflatex':
+            print("Warning: CJK text detected, but pdflatex cannot typeset it. "
+                  "Japanese characters will be missing; install xelatex for "
+                  "CJK support.")
 
     # Convert to PDF using pandoc
     cmd = [
@@ -204,6 +264,7 @@ def convert_markdown_to_pdf(
         '-V', 'colorlinks=true',
         '-V', 'linkcolor=blue',
         '-V', 'urlcolor=blue',
+        *cjk_args,
         '-V', 'header-includes=\\renewcommand{\\rule}[2]{\\vspace{0.5em}} \\widowpenalty=10000 \\clubpenalty=10000 \\brokenpenalty=10000 \\setlength{\\emergencystretch}{3em} \\usepackage{newunicodechar} \\newunicodechar{·}{\\textperiodcentered\\allowbreak} \\newunicodechar{•}{\\textbullet\\allowbreak} \\usepackage{fvextra} \\DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\\\\{\\}} \\DefineVerbatimEnvironment{verbatim}{Verbatim}{breaklines}',
         # Pandoc wraps every image in \pandocbounded, which scales it down to
         # fit the text block. Bounding by the full text height leaves a tall

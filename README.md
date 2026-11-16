@@ -23,6 +23,7 @@ Most markdown-to-pdf converters struggle with diagrams or produce poorly formatt
   - Long inline code (filenames, identifiers) wraps cleanly inside narrow table cells, breaking at `-`, `_`, `.`, and `/` instead of colliding with the next column.
   - Code blocks wrap soft-overflow lines instead of running off the page (via `fvextra` `breaklines`), with a `↪` continuation marker.
   - Unicode-safe monospace font (DejaVu Sans Mono) — box-drawing characters (`│ └── ├──`) and other non-ASCII glyphs render correctly in code blocks.
+  - Japanese text (hiragana, katakana, kanji) is detected automatically and typeset with xeCJK using the Harano Aji fonts that ship with TeX Live — Mincho for body text, Gothic for headings and code. Latin-only documents are unaffected. Requires `xelatex`; Korean (Hangul) is not covered yet.
   - Customizable margins and geometry.
 - **Multi-Engine Support:** Automatically detects and uses the best available PDF engine (`xelatex`, `pdflatex`, `weasyprint`, or `wkhtmltopdf`).
 - **Batch Processing:** Convert single files or entire directories with one command.
