@@ -18,7 +18,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends \
             pandoc poppler-utils lmodern \
             texlive-xetex texlive-latex-extra texlive-fonts-recommended texlive-fonts-extra \
-            texlive-lang-cjk texlive-lang-japanese
+            texlive-lang-cjk texlive-lang-chinese texlive-lang-japanese
       # Ubuntu 24.04 blocks the unprivileged user namespaces Chrome's
       # sandbox needs, so mermaid-cli's headless Chrome cannot start.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0

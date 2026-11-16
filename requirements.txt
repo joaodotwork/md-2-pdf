@@ -10,5 +10,7 @@
 # - pandoc:        brew install pandoc  /  sudo apt-get install pandoc
 # - xelatex:       MacTeX  /  sudo apt-get install texlive-xetex
 # - Japanese text: xeCJK and the Harano Aji fonts (in MacTeX and texlive-full;
-#                  on Debian/Ubuntu: texlive-lang-cjk texlive-lang-japanese)
+#                  on Debian/Ubuntu: texlive-lang-cjk texlive-lang-chinese
+#                  texlive-lang-japanese — xeCJK needs ctexhook.sty from
+#                  the Chinese package)
 # - Node.js 22.13+ (mermaid-cli is installed with the npm package)
