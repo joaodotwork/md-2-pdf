@@ -1,7 +1,10 @@
 name: Test
 
 on:
+  # Branches are tested through their pull request; also testing every push
+  # to them ran the same smoke test twice per PR.
   push:
+    branches: [main]
   pull_request:
 
 jobs:
