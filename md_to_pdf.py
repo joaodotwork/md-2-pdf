@@ -8,6 +8,7 @@ This script converts markdown files to PDF while properly rendering Mermaid diag
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -91,6 +92,46 @@ def find_mermaid_blocks(markdown_content: str) -> List[Tuple[str, str]]:
     return [(match.group(0), match.group(1).strip()) for match in matches]
 
 
+def find_mmdc() -> Optional[str]:
+    """Return the mermaid-cli executable to use, or None if there is none.
+
+    Preference order:
+    1. The mermaid-cli this package depends on. npm installs it next to this
+       script, in <package>/node_modules/.bin, which is not on PATH, so
+       without this lookup the bundled (and version-pinned) copy was never
+       used and whatever happened to be installed globally was.
+    2. A node_modules/.bin/mmdc in the current directory.
+    3. mmdc on PATH.
+    """
+    candidates = [
+        Path(__file__).resolve().parent / 'node_modules' / '.bin' / 'mmdc',
+        Path.cwd() / 'node_modules' / '.bin' / 'mmdc',
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return str(candidate)
+    return shutil.which('mmdc')
+
+
+_mmdc_major_cache: dict = {}
+
+
+def mmdc_major_version(mmdc_path: str) -> Optional[int]:
+    """Return the major version of the given mmdc, or None if unknown."""
+    if mmdc_path not in _mmdc_major_cache:
+        major = None
+        try:
+            result = subprocess.run([mmdc_path, '--version'], check=True,
+                                    capture_output=True, text=True)
+            match = re.search(r'(\d+)\.\d+', result.stdout)
+            if match:
+                major = int(match.group(1))
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            pass
+        _mmdc_major_cache[mmdc_path] = major
+    return _mmdc_major_cache[mmdc_path]
+
+
 def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
     """Render a mermaid diagram to an image file using mmdc CLI.
     
@@ -101,35 +142,36 @@ def render_mermaid_diagram(mermaid_code: str, output_path: str) -> bool:
     Returns:
         True if successful, False otherwise
     """
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.mmd', delete=False) as temp_file:
+    mmdc_path = find_mmdc()
+    if mmdc_path is None:
+        print("Error rendering mermaid diagram: mmdc (mermaid-cli) not found")
+        return False
+
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.mmd', delete=False,
+                                     encoding='utf-8') as temp_file:
         temp_file_path = temp_file.name
         temp_file.write(mermaid_code)
-    
-    # Try local node_modules first, then global mmdc
-    mmdc_path = os.path.join(os.getcwd(), 'node_modules', '.bin', 'mmdc')
-    if not os.path.exists(mmdc_path):
-        mmdc_path = 'mmdc'
-    
+
+    cmd = [mmdc_path, '-i', temp_file_path, '-o', output_path,
+           '-b', 'transparent']
+    # PDF output has to be sized to the diagram itself. Otherwise mmdc lays
+    # it onto fixed 612x792pt pages and paginates anything taller, leaving
+    # page 1 blank; since \includegraphics embeds only the first page, a
+    # tall diagram would silently vanish from the document. mermaid-cli 11
+    # needs --pdfFit for that. 12 fits by default and rejects --pdfFit as an
+    # unknown option, which failed every diagram, so pass it only before 12.
+    major = mmdc_major_version(mmdc_path)
+    if major is not None and major < 12:
+        cmd.append('--pdfFit')
+
     try:
-        subprocess.run([
-            mmdc_path,
-            '-i', temp_file_path,
-            '-o', output_path,
-            '-b', 'transparent',
-            # Without this, mmdc lays PDF output onto fixed 612x792pt pages and
-            # paginates anything taller, leaving page 1 blank. Since
-            # \includegraphics embeds only the first page, a tall diagram would
-            # silently vanish from the document. --pdfFit sizes the page to the
-            # diagram itself, so the output is always a single page and pandoc
-            # scales it down to the text block from there.
-            '--pdfFit'
-        ], check=True, capture_output=True)
+        subprocess.run(cmd, check=True, capture_output=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         print(f"Error rendering mermaid diagram: {e}")
-        if hasattr(e, 'stdout'):
+        if getattr(e, 'stdout', None):
             print(f"stdout: {e.stdout.decode()}")
-        if hasattr(e, 'stderr'):
+        if getattr(e, 'stderr', None):
             print(f"stderr: {e.stderr.decode()}")
         return False
     finally:
@@ -355,15 +397,11 @@ def check_dependencies() -> bool:
                 print("Please install pandoc")
             return False
 
-    # Check for mermaid-cli. An absent mmdc raises FileNotFoundError rather
-    # than CalledProcessError, so both have to be caught for the install
-    # fallback to run at all.
-    try:
-        subprocess.run(
-            ['mmdc', '--version'],
-            check=True, capture_output=True
-        )
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    # Check for mermaid-cli. The npm package ships it as a dependency, so
+    # this normally finds the bundled copy; the global install is only a
+    # fallback for running md_to_pdf.py straight from a checkout.
+    mmdc_path = find_mmdc()
+    if mmdc_path is None:
         print("Mermaid CLI not found, installing...")
         try:
             subprocess.run(['npm', 'install', '-g', '@mermaid-js/mermaid-cli'], check=True)
@@ -371,6 +409,12 @@ def check_dependencies() -> bool:
             print("Failed to install @mermaid-js/mermaid-cli")
             print("Please install it manually: npm install -g @mermaid-js/mermaid-cli")
             return False
+        mmdc_path = find_mmdc()
+        if mmdc_path is None:
+            print("Installed @mermaid-js/mermaid-cli, but mmdc is not on PATH")
+            return False
+    print(f"Found mermaid-cli: {mmdc_path} "
+          f"(major version {mmdc_major_version(mmdc_path) or 'unknown'})")
 
     # Check for a PDF engine. Conversion picks one of these at run time, so
     # without any of them a dependency check that passed would still be

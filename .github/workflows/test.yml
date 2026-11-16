@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+      - name: Install pandoc, xelatex, CJK and poppler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pandoc poppler-utils \
+            texlive-xetex texlive-latex-extra texlive-fonts-extra \
+            texlive-lang-cjk texlive-lang-japanese
+      # Ubuntu 24.04 blocks the unprivileged user namespaces Chrome's
+      # sandbox needs, so mermaid-cli's headless Chrome cannot start.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: npm ci
+      - run: npm test

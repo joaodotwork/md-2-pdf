@@ -32,8 +32,8 @@ Most markdown-to-pdf converters struggle with diagrams or produce poorly formatt
 
 ### Prerequisites
 
-1.  **Node.js & npm** (Required for Mermaid rendering)
-2.  **Python 3** (Required for the core logic)
+1.  **Node.js 22.13+ & npm** (Required for Mermaid rendering; mermaid-cli is installed with the package)
+2.  **Python 3** (Required for the core logic; standard library only, nothing to `pip install`)
 3.  **Pandoc** (The engine behind the conversion)
 4.  **PDF Engine** (One of the following):
     *   **Recommended:** `xelatex` (Install via [MacTeX](https://tug.org/mactex/) on macOS or `texlive-full` on Linux)

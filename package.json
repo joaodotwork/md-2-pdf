@@ -1,13 +1,13 @@
 {
   "name": "@joaodotwork/md-2-pdf",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Convert markdown files to PDF with mermaid diagram support",
   "main": "index.js",
   "bin": {
     "md-2-pdf": "bin/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "python3 test/smoke.py"
   },
   "keywords": [
     "markdown",
@@ -25,7 +25,10 @@
   "author": "Joao Doria de Souza",
   "license": "MIT",
   "dependencies": {
-    "@mermaid-js/mermaid-cli": "^11.4.2"
+    "@mermaid-js/mermaid-cli": "^12.2.0"
+  },
+  "engines": {
+    "node": ">=22.13.0"
   },
   "files": [
     "md_to_pdf.py",

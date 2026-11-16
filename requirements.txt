@@ -1,21 +1,14 @@
-# Python dependencies for md_to_pdf.py
-
-# External Python packages
-PyPDF2>=3.0.0
-Pillow>=10.0.0
-markdown>=3.4.0
-weasyprint>=60.0.0
-
+# md_to_pdf.py uses only the Python standard library; there is nothing to
+# pip install for the default (xelatex) setup.
+#
+# Optional: weasyprint as an alternative PDF engine, used only when xelatex
+# and pdflatex are not installed. Uncomment to install it with
+# `pip install -r requirements.txt`.
+# weasyprint>=66.0
+#
 # External system dependencies (not installed via pip):
-# - pandoc: sudo apt-get install pandoc
-# - texlive-xetex: sudo apt-get install texlive-xetex
-# - Node.js/npm: Install from https://nodejs.org/ or via package manager
-# - mermaid-cli: npm install -g @mermaid-js/mermaid-cli
-
-# Installation Steps:
-# 1. Install Python dependencies: pip install -r requirements.txt
-# 2. Install system dependencies:
-#    sudo apt-get update
-#    sudo apt-get install -y pandoc texlive-xetex
-# 3. Install Node.js dependencies:
-#    npm install -g @mermaid-js/mermaid-cli
+# - pandoc:        brew install pandoc  /  sudo apt-get install pandoc
+# - xelatex:       MacTeX  /  sudo apt-get install texlive-xetex
+# - Japanese text: xeCJK and the Harano Aji fonts (in MacTeX and texlive-full;
+#                  on Debian/Ubuntu: texlive-lang-cjk texlive-lang-japanese)
+# - Node.js 22.13+ (mermaid-cli is installed with the npm package)

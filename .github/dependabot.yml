@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # mermaid-cli and its tree. Grouped so a week's updates arrive as one PR,
+  # which the CI smoke test (test.yml) then has to pass before merging.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+
+  # actions/checkout, actions/setup-node, ...
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
